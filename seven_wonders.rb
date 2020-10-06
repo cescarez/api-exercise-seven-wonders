@@ -9,6 +9,7 @@ BASE_URL = "https://us1.locationiq.com/v1/search.php?key=YOUR_PRIVATE_TOKEN&q=SE
 DIRECTIONS_URL = "https://us1.locationiq.com/v1/directions/driving/{coordinates}?key=<YOUR_ACCESS_TOKEN>"
 REVERSE_GEOCODE_URL = "https://us1.locationiq.com/v1/reverse.php?key=YOUR_PRIVATE_TOKEN&lat=LATITUDE&lon=LONGITUDE&format=json"
 
+
 def get_location(search_term)
 
   query = {
@@ -21,8 +22,7 @@ def get_location(search_term)
   latitude =  location_info.first["lat"]
   longitude =  location_info.first["lon"]
 
-
-  #if check_response returns an HTTP response, return it to the caller, else return the error message
+  #if check_response returns an HTTP response, return  specific data in response, else return the whole object (suspected to be error message)
   if location_info.class == HTTParty::Response
     return { search_term => { lat: latitude, lon: longitude } }
   else
@@ -35,14 +35,16 @@ def driving_directions(start_point, end_point)
 
   coordinates = get_start_and_end_coordinates(start_point, end_point)
 
+  query = {
+      key: LOCATION_IQ_KEY,
+  }
+
   new_url = DIRECTIONS_URL.gsub("{coordinates}", coordinates)
-  new_url = new_url.gsub("<YOUR_ACCESS_TOKEN>", LOCATION_IQ_KEY)
+  driving_directions = check_response(HTTParty.get(new_url, query: query))
 
-  driving_directions = check_response(HTTParty.get(new_url))
-
-  #if check_response returns an HTTP response, return it to the caller, else return the error message
+  #if check_response returns an HTTP response, return  specific data in response, else return the whole object (suspected to be error message)
   if driving_directions.class == HTTParty::Response
-    step_by_step_directions = driving_directions["routes"].map { |route| route["legs"] }
+    step_by_step_directions = driving_directions["routes"].map { |route| route["legs"] }.flatten
     return step_by_step_directions
   else
     return driving_directions
@@ -52,6 +54,7 @@ end
 
 def get_start_and_end_coordinates(start_point, end_point)
 
+  sleep(0.5)
   start_coordinates = get_location(start_point)[start_point]
   sleep(0.5)
   end_coordinates = get_location(end_point)[end_point]
@@ -73,12 +76,14 @@ end
 
 def reverse_geocode(lat, lon)
 
-  new_url = REVERSE_GEOCODE_URL.gsub("YOUR_PRIVATE_TOKEN", LOCATION_IQ_KEY)
-  new_url = new_url.gsub("LATITUDE", lat.to_s)
-  new_url = new_url.gsub("LONGITUDE", lon.to_s)
-  location_name = check_response(HTTParty.get(new_url))
+  query = {
+    key: LOCATION_IQ_KEY,
+    lat: lat,
+    lon: lon,
+  }
+  location_name = check_response(HTTParty.get(REVERSE_GEOCODE_URL, query: query))
 
-  #if check_response returns an HTTP response, return it to the caller, else return the error message
+  #if check_response returns an HTTP response, return  specific data in response, else return the whole object (suspected to be error message)
   if location_name.class == HTTParty::Response
     return location_name["display_name"]
   else
@@ -114,13 +119,13 @@ end
 
 # DRIVER CODE
 
-# puts "coordinates for provided list of Wonders"
-# ap find_seven_wonders
+puts "coordinates for provided list of Wonders"
+ap find_seven_wonders
 
 # DRIVER CODE FOR OPTIONALS
 
 puts "driving directions from Cairo, Egypt to the Great Pyramid of Giza"
 ap driving_directions("Cairo Egypt", "Great Pyramid of Giza")
 
-# puts "names of locations for provided list of coordinates"
-# ap find_location_names
+puts "names of locations for provided list of coordinates"
+ap find_location_names
