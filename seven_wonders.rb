@@ -40,10 +40,9 @@ def driving_directions(start_point, end_point)
 
   driving_directions = check_response(HTTParty.get(new_url))
 
-
   #if check_response returns an HTTP response, return it to the caller, else return the error message
   if driving_directions.class == HTTParty::Response
-    step_by_step_directions = driving_directions["legs"].flat_map { |leg| leg["steps"] }
+    step_by_step_directions = driving_directions["routes"].map { |route| route["legs"] }
     return step_by_step_directions
   else
     return driving_directions
@@ -56,6 +55,7 @@ def get_start_and_end_coordinates(start_point, end_point)
   start_coordinates = get_location(start_point)[start_point]
   sleep(0.5)
   end_coordinates = get_location(end_point)[end_point]
+  sleep(0.5)
 
   return "#{start_coordinates[:lon]},#{start_coordinates[:lat]};#{end_coordinates[:lon]},#{end_coordinates[:lat]}"
 
@@ -80,7 +80,6 @@ def reverse_geocode(lat, lon)
 
   #if check_response returns an HTTP response, return it to the caller, else return the error message
   if location_name.class == HTTParty::Response
-    ap JSON.parse(location_name.body)
     return location_name["display_name"]
   else
     return location_name
@@ -92,11 +91,9 @@ def find_seven_wonders
 
   seven_wonders = ["Great Pyramid of Giza", "Gardens of Babylon", "Colossus of Rhodes", "Pharos of Alexandria", "Statue of Zeus at Olympia", "Temple of Artemis", "Mausoleum at Halicarnassus"]
 
-  seven_wonders_locations = []
-
-  seven_wonders.each do |wonder|
+  seven_wonders_locations = seven_wonders.map do |wonder|
     sleep(0.5)
-    seven_wonders_locations << get_location(wonder)
+    get_location(wonder)
   end
 
   return seven_wonders_locations
@@ -115,19 +112,15 @@ def find_location_names
 
 end
 
+# DRIVER CODE
 
-# Use awesome_print because it can format the output nicely
-# Expecting something like:
-# [{"Great Pyramid of Giza"=>{:lat=>"29.9791264", :lon=>"31.1342383751015"}}, {"Gardens of Babylon"=>{:lat=>"50.8241215", :lon=>"-0.1506162"}}, {"Colossus of Rhodes"=>{:lat=>"36.3397076", :lon=>"28.2003164"}}, {"Pharos of Alexandria"=>{:lat=>"30.94795585", :lon=>"29.5235626430011"}}, {"Statue of Zeus at Olympia"=>{:lat=>"37.6379088", :lon=>"21.6300063"}}, {"Temple of Artemis"=>{:lat=>"32.2818952", :lon=>"35.8908989553238"}}, {"Mausoleum at Halicarnassus"=>{:lat=>"37.03788265", :lon=>"27.4241455276707"}}]
-
+# puts "coordinates for provided list of Wonders"
 # ap find_seven_wonders
 
-#DRIVER CODE FOR OPTIONALS
+# DRIVER CODE FOR OPTIONALS
 
-# driving directions from Cairo to the Great Pyramid of Giza
+puts "driving directions from Cairo, Egypt to the Great Pyramid of Giza"
+ap driving_directions("Cairo Egypt", "Great Pyramid of Giza")
 
-# ap driving_directions("Cairo Egypt", "Great Pyramid of Giza")
-
-#reverse geocode for provided list of coordinates
-
-ap find_location_names
+# puts "names of locations for provided list of coordinates"
+# ap find_location_names
