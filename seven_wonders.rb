@@ -6,8 +6,7 @@ Dotenv.load
 
 LOCATION_IQ_KEY = ENV['LOCATION_IQ_KEY']
 BASE_URL = "https://us1.locationiq.com/v1/search.php?key=YOUR_PRIVATE_TOKEN&q=SEARCH_STRING&format=json"
-# DIRECTIONS_URL = "https://us1.locationiq.com/v1/directions/driving/{coordinates}?key=<YOUR_ACCESS_TOKEN>&option=value&option=value"
-DIRECTIONS_URL = "https://us1.locationiq.com/v1/{service}/{profile}/{coordinates}?key=<YOUR_ACCESS_TOKEN>&option=value&option=value"
+DIRECTIONS_URL = "https://us1.locationiq.com/v1/directions/driving/{coordinates}?key=<YOUR_ACCESS_TOKEN>"
 REVERSE_GEOCODE_URL = "https://us1.locationiq.com/v1/reverse.php?key=YOUR_PRIVATE_TOKEN&lat=LATITUDE&lon=LONGITUDE&format=json"
 
 def get_location(search_term)
@@ -36,17 +35,10 @@ def driving_directions(start_point, end_point)
 
   coordinates = get_start_and_end_coordinates(start_point, end_point)
 
-  query = {
-    service: "directions",
-    profile: "driving",
-    key: LOCATION_IQ_KEY,
-    coordinates: coordinates
-  }
+  new_url = DIRECTIONS_URL.gsub("{coordinates}", coordinates)
+  new_url = new_url.gsub("<YOUR_ACCESS_TOKEN>", LOCATION_IQ_KEY)
 
-  driving_directions = check_response(HTTParty.get(DIRECTIONS_URL, query: query))
-
-  # new_url = DIRECTIONS_URL.gsub("{coordinates}", coordinates)
-  # driving_directions = check_response(HTTParty.get(new_url, query: query))
+  driving_directions = check_response(HTTParty.get(new_url))
 
 
   #if check_response returns an HTTP response, return it to the caller, else return the error message
@@ -79,25 +71,17 @@ def check_response(response)
 
 end
 
-def get_first_name(string)
-  # raise ArgumentError, "Error no location found." if string.nil?
-  return string.split(',').first if string
-end
+def reverse_geocode(lat, lon)
 
-def reverse_geocode(lat:, lon:)
-
-  query = {
-    key: LOCATION_IQ_KEY,
-    lat: :lat,
-    lon: :lon,
-  }
-
-  # DOESN'T WORK
-  location_name = check_response(HTTParty.get(REVERSE_GEOCODE_URL, query))
+  new_url = REVERSE_GEOCODE_URL.gsub("YOUR_PRIVATE_TOKEN", LOCATION_IQ_KEY)
+  new_url = new_url.gsub("LATITUDE", lat.to_s)
+  new_url = new_url.gsub("LONGITUDE", lon.to_s)
+  location_name = check_response(HTTParty.get(new_url))
 
   #if check_response returns an HTTP response, return it to the caller, else return the error message
   if location_name.class == HTTParty::Response
-    return get_first_name(location_name["display_name"])
+    ap JSON.parse(location_name.body)
+    return location_name["display_name"]
   else
     return location_name
   end
@@ -124,7 +108,7 @@ def find_location_names
 
   location_names = coordinates.map do |coord_pair|
     sleep(0.5)
-    reverse_geocode(lat: coord_pair[:lat], lon: coord_pair[:lon])
+    reverse_geocode(coord_pair[:lat], coord_pair[:lon])
   end
 
   return location_names
@@ -136,12 +120,14 @@ end
 # Expecting something like:
 # [{"Great Pyramid of Giza"=>{:lat=>"29.9791264", :lon=>"31.1342383751015"}}, {"Gardens of Babylon"=>{:lat=>"50.8241215", :lon=>"-0.1506162"}}, {"Colossus of Rhodes"=>{:lat=>"36.3397076", :lon=>"28.2003164"}}, {"Pharos of Alexandria"=>{:lat=>"30.94795585", :lon=>"29.5235626430011"}}, {"Statue of Zeus at Olympia"=>{:lat=>"37.6379088", :lon=>"21.6300063"}}, {"Temple of Artemis"=>{:lat=>"32.2818952", :lon=>"35.8908989553238"}}, {"Mausoleum at Halicarnassus"=>{:lat=>"37.03788265", :lon=>"27.4241455276707"}}]
 
-ap find_seven_wonders
+# ap find_seven_wonders
 
 #DRIVER CODE FOR OPTIONALS
 
 # driving directions from Cairo to the Great Pyramid of Giza
+
 # ap driving_directions("Cairo Egypt", "Great Pyramid of Giza")
 
 #reverse geocode for provided list of coordinates
-# ap find_location_names
+
+ap find_location_names
